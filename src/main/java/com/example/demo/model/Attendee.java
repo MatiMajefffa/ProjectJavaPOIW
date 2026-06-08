@@ -1,8 +1,10 @@
 package com.example.demo.model;
 
 import jakarta.persistence.*;
+import lombok.Data; // Dodaj ten import
 import java.time.LocalDateTime;
 
+@Data // To doda automatycznie metodę getUser()
 @Entity
 @Table(name = "attendees")
 public class Attendee {

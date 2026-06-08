@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.dto.EventReportDTO;
 import com.example.demo.model.Expense;
 import com.example.demo.repository.ExpenseRepository;
+import com.example.demo.service.EventService;
 import com.example.demo.service.PdfReportService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -19,34 +20,30 @@ public class ReportController {
 
     private final PdfReportService pdfReportService;
     private final ExpenseRepository expenseRepository;
+    private final EventService eventService; // DODANO: wstrzyknięcie serwisu
 
-    public ReportController(PdfReportService pdfReportService, ExpenseRepository expenseRepository) {
+    // Zaktualizowany konstruktor
+    public ReportController(PdfReportService pdfReportService, ExpenseRepository expenseRepository, EventService eventService) {
         this.pdfReportService = pdfReportService;
         this.expenseRepository = expenseRepository;
+        this.eventService = eventService;
     }
 
+    // 1. Zwraca pełne rozliczenie z serwisu (JSON)
     @GetMapping("/{eventId}")
-    public ResponseEntity<byte[]> downloadReport(@PathVariable Long eventId) {
+    public ResponseEntity<EventReportDTO> getReportData(@PathVariable Long eventId) {
+        EventReportDTO report = eventService.generateReport(eventId);
+        return ResponseEntity.ok(report);
+    }
+
+    // 2. Zwraca PDF
+    @GetMapping("/{eventId}/pdf")
+    public ResponseEntity<byte[]> downloadPdfReport(@PathVariable Long eventId) {
         try {
-            // 1. Pobieramy wydatki z bazy dla danego wydarzenia
-            List<Expense> expenses = expenseRepository.findByEventId(eventId);
-
-            // 2. Obliczamy sumę kosztów
-            double totalCost = expenses.stream()
-                    .mapToDouble(Expense::getAmount)
-                    .sum();
-
-            // 3. Budujemy obiekt DTO z danymi do raportu
-            EventReportDTO report = EventReportDTO.builder()
-                    .eventTitle("Raport Wydarzenia " + eventId)
-                    .expenses(expenses)
-                    .totalCost(totalCost)
-                    .build();
-
-            // 4. Wywołujemy serwis generujący PDF przekazując obiekt DTO
+            // Wykorzystujemy tę samą metodę z serwisu dla spójności danych
+            EventReportDTO report = eventService.generateReport(eventId);
             byte[] pdfBytes = pdfReportService.generateEventReport(report);
 
-            // 5. Konfiguracja nagłówków odpowiedzi
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
             headers.setContentDispositionFormData("filename", "raport-wydarzenia-" + eventId + ".pdf");

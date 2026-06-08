@@ -1,8 +1,11 @@
 package com.example.demo.service;
 
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.util.ByteArrayDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -12,7 +15,7 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
-    @Async  // Ta metoda działa w osobnym wątku!
+    @Async
     public void sendInvitationEmail(String recipientEmail, String invitationLink, String eventName) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -28,11 +31,9 @@ public class EmailService {
             );
 
             mailSender.send(message);
-            System.out.println("✅ Mail wysłany do: " + recipientEmail);
-
+            System.out.println("✅Mail wysłany do: " + recipientEmail);
         } catch (Exception e) {
-            System.err.println("❌ Błąd wysyłki maila: " + e.getMessage());
-            // Możesz zapisać błąd do logów lub bazy
+            System.err.println(" Błąd wysyłki maila: " + e.getMessage());
         }
     }
 
@@ -52,7 +53,27 @@ public class EmailService {
             mailSender.send(message);
 
         } catch (Exception e) {
-            System.err.println("❌ Błąd wysyłki powiadomienia: " + e.getMessage());
+            System.err.println(" Błąd wysyłki powiadomienia: " + e.getMessage());
+        }
+    }
+
+    // Nowa metoda obsługująca wysyłkę PDF jako załącznika
+    @Async
+    public void sendReportEmail(String to, String eventName, byte[] pdfBytes) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true); // true = multipart (załączniki)
+            helper.setTo(to);
+            helper.setSubject("Raport finansowy z wydarzenia: " + eventName);
+            helper.setText("Cześć,\n\nW załączniku przesyłamy pełne sprawozdanie finansowe dla wydarzenia: " + eventName);
+            // Dodanie pliku PDF jako załącznika
+            helper.addAttachment("Raport_" + eventName + ".pdf", new ByteArrayDataSource(pdfBytes, "application/pdf"));
+
+            mailSender.send(message);
+            System.out.println("Raport PDF wysłany do: " + to);
+
+        } catch (Exception e) {
+            System.err.println("Błąd wysyłki raportu PDF: " + e.getMessage());
         }
     }
 }

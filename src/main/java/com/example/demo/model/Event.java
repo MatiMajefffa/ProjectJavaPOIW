@@ -24,6 +24,9 @@ public class Event {
     @JoinColumn(name = "organizer_id")
     private User organizer;
 
-
     private String joinCode;
+
+    // DODANO: Pole blokujące dodawanie wydatków
+    @Column(name = "is_closed")
+    private boolean isClosed = false;
 }

@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.model.Event;
 import com.example.demo.service.EventService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -51,5 +52,18 @@ public class EventController {
         eventService.joinEvent(joinCode, principal.getName());
         // Zwraca JSON: {"message": "Dołączono do wydarzenia!"}
         return ResponseEntity.ok(Map.of("message", "Dołączono do wydarzenia!"));
+    }
+
+
+
+
+    @PostMapping("/{eventId}/close")
+    public ResponseEntity<String> closeEvent(@PathVariable Long eventId) {
+        try {
+            eventService.closeEvent(eventId);
+            return ResponseEntity.ok("Wydarzenie zostało pomyślnie zamknięte.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 }
