@@ -1,12 +1,14 @@
 package com.example.demo.model;
 
 import jakarta.persistence.*;
-import lombok.Data; // Dodaj ten import
+import lombok.Data;
+import lombok.NoArgsConstructor; // Ten import jest kluczowy przy adnotacji @NoArgsConstructor
 import java.time.LocalDateTime;
 
-@Data // To doda automatycznie metodę getUser()
+@Data
 @Entity
 @Table(name = "attendees")
+@NoArgsConstructor
 public class Attendee {
 
     @Id
@@ -27,4 +29,9 @@ public class Attendee {
     @Column(name = "joined_at")
     private LocalDateTime joinedAt = LocalDateTime.now();
 
+
+    public Attendee(Event event, User user) {
+        this.event = event;
+        this.user = user;
+    }
 }

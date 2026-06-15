@@ -1,6 +1,6 @@
 package com.example.demo.service;
 
-import com.example.demo.dto.ExpenseRequest; // Nowe DTO
+import com.example.demo.dto.ExpenseRequest;
 import com.example.demo.model.Expense;
 import com.example.demo.model.Transaction;
 import com.example.demo.model.User;
@@ -15,8 +15,8 @@ public class ExpenseService {
 
     private final ExpenseRepository expenseRepository;
     private final SettlementEngine engine;
-    private final EventService eventService; // DODANE: do blokady
-    private final UserRepository userRepository; // DODANE: do pobierania userów
+    private final EventService eventService;
+    private final UserRepository userRepository;
     private final Map<User, Long> balances = new HashMap<>();
 
     public ExpenseService(ExpenseRepository expenseRepository, SettlementEngine engine,
@@ -31,23 +31,26 @@ public class ExpenseService {
         balances.putIfAbsent(user, 0L);
     }
 
-
     @Transactional
-    public Expense createExpense(Long eventId, ExpenseRequest request) {
-        // 1. Sprawdź blokadę przed każdą operacją zapisu
+    public Expense createExpense(Long eventId, ExpenseRequest request, String email) {
+        // 1. Sprawdź czy event jest aktywny
         eventService.validateEventIsActive(eventId);
 
-        User payer = userRepository.findById(request.getPayerId()).orElseThrow();
+        // 2. Pobierz płatnika na podstawie e-maila (bezpieczne!)
+        User payer = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Nie znaleziono użytkownika"));
+
+        // 3. Pobierz uczestników
         List<User> participants = userRepository.findAllById(request.getParticipantIds());
 
-        addExpense(eventId, request.getTitle(), payer, request.getAmount(), participants);
+        // 4. Dodaj wydatek przez metodę pomocniczą
+        Expense expense = addExpense(eventId, request.getTitle(), payer, request.getAmount(), participants);
 
-
-        return null;
+        return expense;
     }
 
     @Transactional
-    public void addExpense(Long eventId, String description, User payer, double amount, List<User> participants) {
+    public Expense addExpense(Long eventId, String description, User payer, double amount, List<User> participants) {
         if (amount <= 0) throw new IllegalArgumentException("Kwota musi być dodatnia");
         if (participants == null || participants.isEmpty())
             throw new IllegalArgumentException("Musi być co najmniej jeden uczestnik");
@@ -62,6 +65,8 @@ public class ExpenseService {
 
         expenseRepository.save(newExpense);
         processExpense(payer, (long) (amount * 100), participants);
+
+        return newExpense;
     }
 
     private void processExpense(User payer, long totalAmount, List<User> participants) {

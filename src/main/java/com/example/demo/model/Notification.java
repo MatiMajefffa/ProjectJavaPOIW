@@ -16,5 +16,8 @@ public class Notification {
 
     private String message;
     private boolean isRead;
-    private String userEmail; // Żeby wiedzieć, dla kogo to powiadomienie
+
+    // Używamy ID użytkownika zamiast e-maila
+    @Column(nullable = false)
+    private Long userId;
 }

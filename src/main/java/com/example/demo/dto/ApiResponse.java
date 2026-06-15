@@ -9,7 +9,7 @@ public class ApiResponse {
         this.success = success;
     }
 
-    // Gettery są wymagane, żeby Spring mógł stworzyć JSON-a!
+
     public String getMessage() {
         return message;
     }

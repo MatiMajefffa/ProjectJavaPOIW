@@ -8,8 +8,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
-import java.util.Map; // Dodano import
+import java.util.Map;
 
+/**
+ * Kontroler obsługujący główne operacje na wydarzeniach (Events).
+ * Wszystkie endpointy są zabezpieczone i wymagają autoryzacji użytkownika (JWT).
+ */
 @RestController
 @RequestMapping("/api/events")
 @CrossOrigin(origins = "*")
@@ -21,48 +25,70 @@ public class EventController {
         this.eventService = eventService;
     }
 
-    // GET api/events - lista wszystkich wydarzeń użytkownika
+    /**
+     * GET /api/events
+     * Pobiera listę wszystkich wydarzeń powiązanych z zalogowanym użytkownikiem.
+     * Wykorzystuje principal.getName() (email) do zidentyfikowania użytkownika.
+     */
     @GetMapping
     public ResponseEntity<List<Event>> getAllEvents(Principal principal) {
         return ResponseEntity.ok(eventService.findAllByUser(principal.getName()));
     }
 
-    // POST api/events - tworzy wydarzenie
+    /**
+     * POST /api/events
+     * Inicjalizuje nowe wydarzenie w systemie.
+     * Użytkownik wysyłający żądanie zostaje automatycznie przypisany jako organizator.
+     */
     @PostMapping
     public ResponseEntity<Event> createEvent(@RequestBody Event event, Principal principal) {
         return ResponseEntity.ok(eventService.createEvent(event, principal.getName()));
     }
 
-    // GET api/events/{id} - statystyki/szczegóły
+    /**
+     * GET /api/events/{eventId}
+     * Zwraca szczegółowe informacje o wybranym wydarzeniu.
+     * Serwis weryfikuje, czy użytkownik ma prawo wglądu (czy jest uczestnikiem lub organizatorem).
+     */
     @GetMapping("/{eventId}")
-    public ResponseEntity<Event> getEventDetails(@PathVariable Long eventId) {
-        return ResponseEntity.ok(eventService.findById(eventId));
+    public ResponseEntity<Event> getEventDetails(@PathVariable Long eventId, Principal principal) {
+        return ResponseEntity.ok(eventService.getEventWithPermission(eventId, principal.getName()));
     }
 
-    // DELETE api/events/{id}
+    /**
+     * DELETE /api/events/{eventId}
+     * Usuwa wydarzenie z bazy danych.
+     * Operacja dostępna tylko dla właściciela (organizatora) wydarzenia.
+     */
     @DeleteMapping("/{eventId}")
-    public ResponseEntity<Void> deleteEvent(@PathVariable Long eventId) {
-        eventService.deleteEvent(eventId);
+    public ResponseEntity<Void> deleteEvent(@PathVariable Long eventId, Principal principal) {
+        eventService.deleteEvent(eventId, principal.getName());
         return ResponseEntity.noContent().build();
     }
 
-    // POST api/events/join - dołączanie przez kod
+    /**
+     * POST /api/events/join
+     * Umożliwia dołączenie do wydarzenia za pomocą unikalnego kodu zaproszenia.
+     * Automatycznie tworzy powiązanie między użytkownikiem a wydarzeniem.
+     */
     @PostMapping("/join")
     public ResponseEntity<Map<String, String>> joinEvent(@RequestParam String joinCode, Principal principal) {
         eventService.joinEvent(joinCode, principal.getName());
-        // Zwraca JSON: {"message": "Dołączono do wydarzenia!"}
         return ResponseEntity.ok(Map.of("message", "Dołączono do wydarzenia!"));
     }
 
-
-
-
+    /**
+     * POST /api/events/{eventId}/close
+     * Finalizuje wydarzenie – po zamknięciu nie można dodawać nowych wydatków.
+     * Wymaga uprawnień organizatora.
+     */
     @PostMapping("/{eventId}/close")
-    public ResponseEntity<String> closeEvent(@PathVariable Long eventId) {
+    public ResponseEntity<String> closeEvent(@PathVariable Long eventId, Principal principal) {
         try {
-            eventService.closeEvent(eventId);
+            eventService.closeEvent(eventId, principal.getName());
             return ResponseEntity.ok("Wydarzenie zostało pomyślnie zamknięte.");
         } catch (RuntimeException e) {
+            // Zwraca komunikat błędu z serwisu w przypadku braku uprawnień lub błędnego ID
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
