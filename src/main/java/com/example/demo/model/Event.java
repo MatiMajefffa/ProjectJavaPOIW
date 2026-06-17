@@ -1,5 +1,6 @@
 package com.example.demo.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -33,14 +34,17 @@ public class Event {
     private boolean isClosed = false;
 
     // Lista uczestników
+    @JsonIgnore // <-- DODAJ TO
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
     private List<Attendee> attendees = new ArrayList<>();
 
     // Lista wydatków
+    @JsonIgnore // <-- DODAJ TO
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
     private List<Expense> expenses = new ArrayList<>();
 
     // Lista zadań
+    @JsonIgnore // <-- DODAJ TO
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
     private List<Task> tasks = new ArrayList<>();
 }

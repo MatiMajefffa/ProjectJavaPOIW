@@ -57,17 +57,19 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Pozwalamy na bezproblemowy ruch z Twojego frontendu w React
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
-        // Pozwalamy na wszystkie standardowe metody HTTP używane w projekcie
+
+        // Pozwalamy na ruch z Reacta, klienta HTTP (test.http) oraz emulatorów mobilnych
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:[*]",
+                "http://127.0.0.1:[*]",
+                "http://10.0.2.2:[*]" // Adres hosta dla emulatora Androida
+        ));
+
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        // Akceptujemy wszystkie nagłówki wysyłane przez przeglądarkę (w tym kluczowy Authorization)
         configuration.setAllowedHeaders(List.of("*"));
-        // Pozwalamy na przesyłanie poświadczeń i nagłówków autoryzacji
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Stosujemy tę konfigurację CORS globalnie do całego API serwera
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
