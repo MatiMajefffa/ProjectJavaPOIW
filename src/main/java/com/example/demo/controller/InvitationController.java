@@ -50,10 +50,14 @@ public class InvitationController {
     // QR kod oparty na stałym joinCode
     @GetMapping("/qr/{eventId}")
     public ResponseEntity<byte[]> getQrCode(@PathVariable Long eventId, Principal principal) {
+        // code = czysty kod do bazy (np. MAZURY2026)
         String code = invitationService.getJoinCode(eventId, principal.getName());
+        // link = pełny URL do zakodowania w obrazku QR
         String link = invitationService.getInvitationLink(code);
 
-        byte[] qrBytes = qrCodeService.generateQrCode(link, principal.getName());
+        // POPRAWKA: Przekazujemy zarówno czysty kod do walidacji dostępu, jak i pełny link jako treść kodu QR
+        byte[] qrBytes = qrCodeService.generateQrCode(code, link, principal.getName());
+
         return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(qrBytes);
     }
 }

@@ -27,8 +27,9 @@ public class QrCodeService {
         this.attendeeRepository = attendeeRepository;
     }
 
-    public byte[] generateQrCode(String joinCode, String email) {
-        // 1. Znajdź wydarzenie po kodzie (joinCode)
+    // Dodaliśmy parametr 'textToEncode', aby rozdzielić kod wyszukiwania od tekstu w QR
+    public byte[] generateQrCode(String joinCode, String textToEncode, String email) {
+        // 1. Znajdź wydarzenie po czystym kodzie (joinCode)
         Event event = eventRepository.findByJoinCode(joinCode)
                 .orElseThrow(() -> new RuntimeException("Wydarzenie o tym kodzie nie istnieje"));
 
@@ -44,10 +45,10 @@ public class QrCodeService {
             throw new RuntimeException("Brak uprawnień do wygenerowania kodu QR dla tego wydarzenia");
         }
 
-        // 4. Generowanie kodu QR
+        // 4. Generowanie kodu QR z przekazanego tekstu (np. pełnego linku)
         try {
             QRCodeWriter qrCodeWriter = new QRCodeWriter();
-            BitMatrix bitMatrix = qrCodeWriter.encode(joinCode, BarcodeFormat.QR_CODE, 250, 250);
+            BitMatrix bitMatrix = qrCodeWriter.encode(textToEncode, BarcodeFormat.QR_CODE, 250, 250);
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             MatrixToImageWriter.writeToStream(bitMatrix, "PNG", baos);

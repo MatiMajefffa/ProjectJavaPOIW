@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy; // DODANO: Import dla bezstanowości
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -39,16 +39,23 @@ public class SecurityConfig {
                 // 2. Wyłączamy CSRF (nie jest potrzebne przy bezstanowym API i JWT)
                 .csrf(csrf -> csrf.disable())
 
-                // 3. KLUCZOWA POPRAWKA: Wymuszenie polityki STATELESS dla Spring Security
+                // 3. Wymuszenie polityki STATELESS dla Spring Security
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
                 // 4. Definiujemy zasady autoryzacji ścieżek
                 .authorizeHttpRequests(auth -> auth
+                        // Puszczamy wolno zapytania testowe OPTIONS (CORS)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
-                        // Każde inne zapytanie (w tym /api/events/{eventId}/tasks) wymaga zalogowania
+
+                        // WYŁĄCZNIE rejestracja i logowanie są ogólnodostępne bez tokenu:
+                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+
+                        // Zmiana profilu, hasła oraz usunięcie konta BEZWZGLĘDNIE wymagają autoryzacji JWT:
+                        .requestMatchers("/api/auth/profile", "/api/auth/change-password", "/api/auth/user").authenticated()
+
+                        // Każde inne zapytanie (wydarzenia, wydatki, zadania itp.) również wymaga zalogowania
                         .anyRequest().authenticated()
                 )
 

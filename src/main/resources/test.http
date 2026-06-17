@@ -79,12 +79,12 @@ Authorization: Bearer {{auth_token_anna}}
 
 ### 2.3 Pobranie szczegółowych informacji o nowym wydarzeniu (Upewnij się, jakie ID przypisała baza, np. ID: 2)
 # @ref login_anna
-GET http://localhost:8080/api/events/3
+GET http://localhost:8080/api/events/5
 Authorization: Bearer {{auth_token_anna}}
 
 ### 2.4 Dołączenie przez Jana do wydarzenia za pomocą kodu zaproszenia Anny
 # @ref login_jan
-POST http://localhost:8080/api/events/join?joinCode=e780c7c8ccbc4e5c9215e23124068960
+POST http://localhost:8080/api/events/join?joinCode=a039eb9beaaa43108fdac1eb3c88d15f
 Authorization: Bearer {{auth_token_jan}}
 
 
@@ -95,7 +95,7 @@ Authorization: Bearer {{auth_token_jan}}
 ### 3.1 Dodanie wydatku przez Annę (Czarter jachtu: 1200 PLN, uczestnicy: Anna ID=3, Jan ID=4)
 # Uwaga: Zweryfikuj faktyczne identyfikatory ID wygenerowane dla Anny i Jana w swojej bazie danych.
 # @ref login_anna
-POST http://localhost:8080/api/expenses/3
+POST http://localhost:8080/api/expenses/5
 Content-Type: application/json
 Authorization: Bearer {{auth_token_anna}}
 
@@ -108,7 +108,7 @@ Authorization: Bearer {{auth_token_anna}}
 
 ### 3.2 Dodanie wydatku przez Jana (Zakupy spożywcze: 400 PLN, uczestnicy: Anna i Jan)
 # @ref login_jan
-POST http://localhost:8080/api/expenses/2
+POST http://localhost:8080/api/expenses/5
 Content-Type: application/json
 Authorization: Bearer {{auth_token_jan}}
 
@@ -126,12 +126,12 @@ Authorization: Bearer {{auth_token_jan}}
 
 ### 4.1 Pobranie surowych danych rozliczeniowych dla nowego wydarzenia
 # @ref login_anna
-GET http://localhost:8080/api/reports/2
+GET http://localhost:8080/api/reports/5
 Authorization: Bearer {{auth_token_anna}}
 
 ### 4.2 Generowanie sprawozdania finansowego w formacie PDF dla nowego wydarzenia
 # @ref login_anna
-GET http://localhost:8080/api/reports/2/pdf
+GET http://localhost:8080/api/reports/5/pdf
 Authorization: Bearer {{auth_token_anna}}
 
 
@@ -141,7 +141,7 @@ Authorization: Bearer {{auth_token_anna}}
 
 ### 5.1 Dodanie nowego zadania przez Annę
 # @ref login_anna
-POST http://localhost:8080/api/events/3/tasks
+POST http://localhost:8080/api/events/5/tasks
 Content-Type: application/json
 Authorization: Bearer {{auth_token_anna}}
 
@@ -152,17 +152,17 @@ Authorization: Bearer {{auth_token_anna}}
 
 ### 5.2 Pobranie listy zadań dla nowego wydarzenia przez Jana
 # @ref login_jan
-GET http://localhost:8080/api/events/3/tasks
+GET http://localhost:8080/api/events/5/tasks
 Authorization: Bearer {{auth_token_jan}}
 
 ### 5.3 Oznaczenie nowego zadania jako wykonane (Zweryfikuj ID zadania, np. ID: 2)
 # @ref login_jan
-PUT http://localhost:8080/api/events/3/tasks/2/complete
+PUT http://localhost:8080/api/events/5/tasks/3/complete
 Authorization: Bearer {{auth_token_jan}}
 
 ### 5.4 Przypisanie wykonawcy do zadania (Anna przypisuje Jana)
 # @ref login_anna
-PUT http://localhost:8080/api/events/3/tasks/2/assign?email=jan@example.com
+PUT http://localhost:8080/api/events/5/tasks/3/assign?email=jan@example.com
 Authorization: Bearer {{auth_token_anna}}
 
 
@@ -172,22 +172,22 @@ Authorization: Bearer {{auth_token_anna}}
 
 ### 6.1 Pobranie linku zaproszenia opartego na stałym joinCode przez Annę
 # @ref login_anna
-GET http://localhost:8080/api/invitations/link/2
+GET http://localhost:8080/api/invitations/link/5
 Authorization: Bearer {{auth_token_anna}}
 
 ### 6.2 Wysyłka kodu zaproszenia e-mailem do kolejnego znajomego przez Annę
 # @ref login_anna
-POST http://localhost:8080/api/invitations/send/2?email=nowy_znajomy@example.com&eventName=Mazurowisko2026
+POST http://localhost:8080/api/invitations/send/5?email=nowy_znajomy@example.com&eventName=Mazurowisko2026
 Authorization: Bearer {{auth_token_anna}}
 
 ### 6.3 Generowanie kodu QR dla linku zaproszenia nowego wydarzenia
 # @ref login_anna
-GET http://localhost:8080/api/invitations/qr/2
+GET http://localhost:8080/api/invitations/qr/5
 Authorization: Bearer {{auth_token_anna}}
 
 ### 7.1 Ogólne generowanie kodu QR dla joinCode nowego wydarzenia
 # @ref login_anna
-GET http://localhost:8080/api/qr/MAZURY2026
+GET http://localhost:8080/api/qr/????????
 Authorization: Bearer {{auth_token_anna}}
 
 
@@ -217,15 +217,15 @@ Content-Type: application/json
 Authorization: Bearer {{auth_token_anna}}
 
 {
-  "name": "Anna M."
+  "name": "Anna M.mmm"
 }
 
 ### 9.2 Zamknięcie nowego wydarzenia przez organizatorkę Annę
 # @ref login_anna
-POST http://localhost:8080/api/events/2/close
+POST http://localhost:8080/api/events/5/close
 Authorization: Bearer {{auth_token_anna}}
 
 ### 9.3 Usunięcie nowego wydarzenia z bazy danych
 # @ref login_anna
-DELETE http://localhost:8080/api/events/2
+DELETE http://localhost:8080/api/events/5
 Authorization: Bearer {{auth_token_anna}}
