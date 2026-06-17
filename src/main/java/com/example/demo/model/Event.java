@@ -2,7 +2,6 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import org.springframework.scheduling.config.Task;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;

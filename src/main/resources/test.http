@@ -1,37 +1,231 @@
-### Rejstracja
-POST http://localhost:8080/api/auth/register
-Content-Type: application/json
+### ====================================================================
+### AUTOMATYCZNE BLOKI LOGOWANIA (Odświeżanie sesji i tokenów)
+### ====================================================================
 
-{
-  "email": "kuba@example.com",
-  "password": "superbezpiecznehaslo",
-  "name": "Kuba"
-}
-
-### Logowanie i pobranie tokenu
+# @name login_anna
 POST http://localhost:8080/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "kuba@example.com",
-  "password": "superbezpiecznehaslo"
+  "email": "anna@example.com",
+  "password": "haslo_anki_123"
 }
 
 > {%
-    // Ta funkcja automatycznie zapisze token z odpowiedzi do zmiennej globalnej auth_token
-    client.global.set("auth_token", response.body.token);
+    client.global.set("auth_token_anna", response.body.token);
 %}
 
-### Tworzenie nowego Wydarzenia (Event)
-POST http://localhost:8080/api/events
+###
+
+# @name login_jan
+POST http://localhost:8080/api/auth/login
 Content-Type: application/json
-Authorization: Bearer {{auth_token}}
 
 {
-  "title": "Domowka",
-  "location": "Gliwice"
+  "email": "jan@example.com",
+  "password": "bezpieczny_janek"
 }
 
-### Pobranie listy wydarzeń (Aby sprawdzić ID Twojego wydarzenia)
+> {%
+    client.global.set("auth_token_jan", response.body.token);
+%}
+
+
+### ====================================================================
+### 1. KONTROLER: AuthController (Rejestracja i logowanie nowych osób)
+### ====================================================================
+
+### 1.1 Rejestracja użytkownika Anna
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "anna@example.com",
+  "password": "haslo_anki_123",
+  "name": "Anna"
+}
+
+### 1.2 Rejestracja użytkownika Jan
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "jan@example.com",
+  "password": "bezpieczny_janek",
+  "name": "Jan"
+}
+
+
+### ====================================================================
+### 2. KONTROLER: EventController (Zarządzanie nowym wydarzeniem)
+### ====================================================================
+
+### 2.1 Inicjalizacja nowego wydarzenia przez Annę
+# @ref login_anna
+POST http://localhost:8080/api/events
+Content-Type: application/json
+Authorization: Bearer {{auth_token_anna}}
+
+{
+  "title": "Mazurowisko 2026",
+  "location": "Giżycko",
+  "joinCode": "MAZURY2026"
+}
+
+### 2.2 Pobranie wszystkich wydarzeń powiązanych z Anną
+# @ref login_anna
 GET http://localhost:8080/api/events
-Authorization: Bearer {{auth_token}}
+Authorization: Bearer {{auth_token_anna}}
+
+### 2.3 Pobranie szczegółowych informacji o nowym wydarzeniu (Upewnij się, jakie ID przypisała baza, np. ID: 2)
+# @ref login_anna
+GET http://localhost:8080/api/events/3
+Authorization: Bearer {{auth_token_anna}}
+
+### 2.4 Dołączenie przez Jana do wydarzenia za pomocą kodu zaproszenia Anny
+# @ref login_jan
+POST http://localhost:8080/api/events/join?joinCode=e780c7c8ccbc4e5c9215e23124068960
+Authorization: Bearer {{auth_token_jan}}
+
+
+### ====================================================================
+### 3. KONTROLER: ExpenseController (Dodawanie nowych wydatków)
+### ====================================================================
+
+### 3.1 Dodanie wydatku przez Annę (Czarter jachtu: 1200 PLN, uczestnicy: Anna ID=3, Jan ID=4)
+# Uwaga: Zweryfikuj faktyczne identyfikatory ID wygenerowane dla Anny i Jana w swojej bazie danych.
+# @ref login_anna
+POST http://localhost:8080/api/expenses/3
+Content-Type: application/json
+Authorization: Bearer {{auth_token_anna}}
+
+{
+  "title": "Czarter jachtu i paliwo do silnika",
+  "amount": 1200.0,
+  "splitType": "EQUAL",
+  "participantIds": [3, 4]
+}
+
+### 3.2 Dodanie wydatku przez Jana (Zakupy spożywcze: 400 PLN, uczestnicy: Anna i Jan)
+# @ref login_jan
+POST http://localhost:8080/api/expenses/2
+Content-Type: application/json
+Authorization: Bearer {{auth_token_jan}}
+
+{
+  "title": "Zakupy jedzeniowe i katering",
+  "amount": 400.0,
+  "splitType": "EQUAL",
+  "participantIds": [3, 4]
+}
+
+
+### ====================================================================
+### 4. KONTROLER: ReportController (Rozliczenie nowego wydarzenia)
+### ====================================================================
+
+### 4.1 Pobranie surowych danych rozliczeniowych dla nowego wydarzenia
+# @ref login_anna
+GET http://localhost:8080/api/reports/2
+Authorization: Bearer {{auth_token_anna}}
+
+### 4.2 Generowanie sprawozdania finansowego w formacie PDF dla nowego wydarzenia
+# @ref login_anna
+GET http://localhost:8080/api/reports/2/pdf
+Authorization: Bearer {{auth_token_anna}}
+
+
+### ====================================================================
+### 5. KONTROLER: TaskController (Zadania dla nowego wydarzenia)
+### ====================================================================
+
+### 5.1 Dodanie nowego zadania przez Annę
+# @ref login_anna
+POST http://localhost:8080/api/events/2/tasks
+Content-Type: application/json
+Authorization: Bearer {{auth_token_anna}}
+
+{
+  "description": "Zarezerwować miejsce w porcie",
+  "isCompleted": false
+}
+
+### 5.2 Pobranie listy zadań dla nowego wydarzenia przez Jana
+# @ref login_jan
+GET http://localhost:8080/api/events/2/tasks
+Authorization: Bearer {{auth_token_jan}}
+
+### 5.3 Oznaczenie nowego zadania jako wykonane (Zweryfikuj ID zadania, np. ID: 2)
+# @ref login_jan
+PUT http://localhost:8080/api/events/2/tasks/2/complete
+Authorization: Bearer {{auth_token_jan}}
+
+### 5.4 Przypisanie wykonawcy do zadania (Anna przypisuje Jana)
+# @ref login_anna
+PUT http://localhost:8080/api/events/2/tasks/2/assign?email=jan@example.com
+Authorization: Bearer {{auth_token_anna}}
+
+
+### ====================================================================
+### 6. KONTROLER: InvitationController & QrCodeController
+### ====================================================================
+
+### 6.1 Pobranie linku zaproszenia opartego na stałym joinCode przez Annę
+# @ref login_anna
+GET http://localhost:8080/api/invitations/link/2
+Authorization: Bearer {{auth_token_anna}}
+
+### 6.2 Wysyłka kodu zaproszenia e-mailem do kolejnego znajomego przez Annę
+# @ref login_anna
+POST http://localhost:8080/api/invitations/send/2?email=nowy_znajomy@example.com&eventName=Mazurowisko2026
+Authorization: Bearer {{auth_token_anna}}
+
+### 6.3 Generowanie kodu QR dla linku zaproszenia nowego wydarzenia
+# @ref login_anna
+GET http://localhost:8080/api/invitations/qr/2
+Authorization: Bearer {{auth_token_anna}}
+
+### 7.1 Ogólne generowanie kodu QR dla joinCode nowego wydarzenia
+# @ref login_anna
+GET http://localhost:8080/api/qr/MAZURY2026
+Authorization: Bearer {{auth_token_anna}}
+
+
+### ====================================================================
+### 8. KONTROLER: NotificationController (System notyfikacji dla nowych osób)
+### ====================================================================
+
+### 8.1 Wysłanie powiadomienia e-mailowego o nowym długu (Anna do Jana)
+# @ref login_anna
+POST http://localhost:8080/api/notifications/send-debt?email=jan@example.com&debtorName=Anna&amount=400.0
+Authorization: Bearer {{auth_token_anna}}
+
+### 8.2 Pobranie powiadomień wewnętrznych zalogowanego Jana
+# @ref login_jan
+GET http://localhost:8080/api/notifications
+Authorization: Bearer {{auth_token_jan}}
+
+
+### ====================================================================
+### 9. FINALIZACJA I CZYSZCZENIE (Nowe dane i zamknięcie)
+### ====================================================================
+
+### 9.1 Aktualizacja nazwy profilowej Anny
+# @ref login_anna
+PUT http://localhost:8080/api/auth/profile
+Content-Type: application/json
+Authorization: Bearer {{auth_token_anna}}
+
+{
+  "name": "Anna M."
+}
+
+### 9.2 Zamknięcie nowego wydarzenia przez organizatorkę Annę
+# @ref login_anna
+POST http://localhost:8080/api/events/2/close
+Authorization: Bearer {{auth_token_anna}}
+
+### 9.3 Usunięcie nowego wydarzenia z bazy danych
+# @ref login_anna
+DELETE http://localhost:8080/api/events/2
+Authorization: Bearer {{auth_token_anna}}

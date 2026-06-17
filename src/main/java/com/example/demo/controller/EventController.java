@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.EventDetailsDTO;
 import com.example.demo.model.Event;
 import com.example.demo.service.EventService;
 import org.springframework.http.HttpStatus;
@@ -50,9 +51,14 @@ public class EventController {
      * Zwraca szczegółowe informacje o wybranym wydarzeniu.
      * Serwis weryfikuje, czy użytkownik ma prawo wglądu (czy jest uczestnikiem lub organizatorem).
      */
+    /**
+     * GET /api/events/{eventId}
+     * Zwraca szczegółowe informacje o wybranym wydarzeniu wraz z listą uczestników.
+     */
     @GetMapping("/{eventId}")
-    public ResponseEntity<Event> getEventDetails(@PathVariable Long eventId, Principal principal) {
-        return ResponseEntity.ok(eventService.getEventWithPermission(eventId, principal.getName()));
+    public ResponseEntity<EventDetailsDTO> getEventDetails(@PathVariable Long eventId, Principal principal) {
+        // Zmieniamy wywołanie z eventService.getEventWithPermission na naszą nową metodę getEventDetails
+        return ResponseEntity.ok(eventService.getEventDetails(eventId, principal.getName()));
     }
 
     /**

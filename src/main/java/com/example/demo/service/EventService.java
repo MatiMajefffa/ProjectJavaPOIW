@@ -1,5 +1,7 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.AttendeeDTO;
+import com.example.demo.dto.EventDetailsDTO;
 import com.example.demo.dto.EventReportDTO;
 import com.example.demo.model.*;
 import com.example.demo.repository.*;
@@ -49,15 +51,55 @@ public class EventService {
         eventRepository.deleteById(eventId);
     }
 
+    // Zmodyfikuj istniejącą metodę joinEvent w EventService.java
     public void joinEvent(String joinCode, String email) {
         Event event = eventRepository.findByJoinCode(joinCode)
                 .orElseThrow(() -> new RuntimeException("Błędny kod wydarzenia"));
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("Użytkownik nie istnieje"));
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Użytkownik nie istnieje"));
 
         if (!attendeeRepository.existsByEventAndUser(event, user)) {
             Attendee attendee = new Attendee(event, user);
+
+            // KLUCZOWA POPRAWKA: Ręczne dodanie do listy w pamięci obiektu Event
+            if (event.getAttendees() == null) {
+                event.setAttendees(new java.util.ArrayList<>());
+            }
+            event.getAttendees().add(attendee);
+
+            // Zapisujemy uczestnika w bazie
             attendeeRepository.save(attendee);
         }
+    }
+
+    // DODAJ nową metodę pobierania szczegółów wydarzenia do EventService.java
+    public EventDetailsDTO getEventDetails(Long eventId, String email) {
+        // Wykorzystujemy Twoją istniejącą metodę weryfikacji uprawnień
+        Event event = getEventWithPermission(eventId, email);
+
+        // Mapujemy listę uczestników (Entity -> DTO)
+        List<AttendeeDTO> attendeeDTOs = event.getAttendees().stream()
+                .map(attendee -> AttendeeDTO.builder()
+                        .id(attendee.getId())
+                        .userId(attendee.getUser().getId())
+                        .name(attendee.getUser().getName())
+                        .email(attendee.getUser().getEmail())
+                        .joinedAt(attendee.getJoinedAt())
+                        .build())
+                .toList();
+
+        // Zwracamy kompletny, bezpieczny obiekt szczegółów wydarzenia
+        return EventDetailsDTO.builder()
+                .id(event.getId())
+                .title(event.getTitle())
+                .date(event.getDate())
+                .location(event.getLocation())
+                .type(event.getType())
+                .joinCode(event.getJoinCode())
+                .isClosed(event.isClosed())
+                .organizerName(event.getOrganizer() != null ? event.getOrganizer().getName() : null)
+                .attendees(attendeeDTOs)
+                .build();
     }
 
     public void validateEventIsActive(Long eventId) {
