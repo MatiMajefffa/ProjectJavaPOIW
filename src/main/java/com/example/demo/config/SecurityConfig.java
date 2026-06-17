@@ -3,9 +3,10 @@ package com.example.demo.config;
 import com.example.demo.service.JwtService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod; // DODANO: Import dla metod HTTP
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy; // DODANO: Import dla bezstanowości
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -20,35 +21,38 @@ public class SecurityConfig {
 
     private final JwtService jwtService;
 
-    // Konstruktor wstrzykujący JwtService – dzięki temu rozwiązujemy problem podświetlenia na czerwono w IntelliJ
     public SecurityConfig(JwtService jwtService) {
         this.jwtService = jwtService;
     }
 
-    // Definicja algorytmu szyfrowania haseł użytkowników
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // Definicja naszego głównego łańcucha filtrów bezpieczeństwa
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // Włączamy obsługę zasad CORS zdefiniowanych w bean na dole pliku
+                // 1. Włączamy obsługę zasad CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // Wyłączamy csrf, ponieważ w naszej aplikacji wykorzystujemy API bezstanowe z JWT
+
+                // 2. Wyłączamy CSRF (nie jest potrzebne przy bezstanowym API i JWT)
                 .csrf(csrf -> csrf.disable())
-                // Definiujemy zasady dla zapytań HTTP
+
+                // 3. KLUCZOWA POPRAWKA: Wymuszenie polityki STATELESS dla Spring Security
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                // 4. Definiujemy zasady autoryzacji ścieżek
                 .authorizeHttpRequests(auth -> auth
-                        // POPRAWKA: Puszczamy wolno każde zapytanie testowe OPTIONS (CORS) z przeglądarki internetowej
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // Rejestracja i logowanie są ogólnodostępne
                         .requestMatchers("/api/auth/**").permitAll()
-                        // Każde inne zapytanie (w tym /api/events, /api/expenses) wymaga poprawnego tokenu JWT
+                        // Każde inne zapytanie (w tym /api/events/{eventId}/tasks) wymaga zalogowania
                         .anyRequest().authenticated()
                 )
-                // REJESTRACJA FILTRA JWT: Wpinamy nasz autorski filtr przed standardowym filtrem logowania formularzem
+
+                // 5. Wpinamy filtr JWT przed standardowym filtrem autoryzacji
                 .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -62,7 +66,7 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:[*]",
                 "http://127.0.0.1:[*]",
-                "http://10.0.2.2:[*]" // Adres hosta dla emulatora Androida
+                "http://10.0.2.2:[*]"
         ));
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));

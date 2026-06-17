@@ -141,7 +141,7 @@ Authorization: Bearer {{auth_token_anna}}
 
 ### 5.1 Dodanie nowego zadania przez Annę
 # @ref login_anna
-POST http://localhost:8080/api/events/2/tasks
+POST http://localhost:8080/api/events/3/tasks
 Content-Type: application/json
 Authorization: Bearer {{auth_token_anna}}
 
@@ -152,17 +152,17 @@ Authorization: Bearer {{auth_token_anna}}
 
 ### 5.2 Pobranie listy zadań dla nowego wydarzenia przez Jana
 # @ref login_jan
-GET http://localhost:8080/api/events/2/tasks
+GET http://localhost:8080/api/events/3/tasks
 Authorization: Bearer {{auth_token_jan}}
 
 ### 5.3 Oznaczenie nowego zadania jako wykonane (Zweryfikuj ID zadania, np. ID: 2)
 # @ref login_jan
-PUT http://localhost:8080/api/events/2/tasks/2/complete
+PUT http://localhost:8080/api/events/3/tasks/2/complete
 Authorization: Bearer {{auth_token_jan}}
 
 ### 5.4 Przypisanie wykonawcy do zadania (Anna przypisuje Jana)
 # @ref login_anna
-PUT http://localhost:8080/api/events/2/tasks/2/assign?email=jan@example.com
+PUT http://localhost:8080/api/events/3/tasks/2/assign?email=jan@example.com
 Authorization: Bearer {{auth_token_anna}}
 
 
