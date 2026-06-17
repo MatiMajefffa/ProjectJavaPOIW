@@ -27,8 +27,9 @@ public class QrCodeController {
      */
     @GetMapping("/{text}")
     public ResponseEntity<byte[]> getQrCode(@PathVariable String text, Principal principal) {
-        // Generujemy kod QR przekazując tekst i e-mail użytkownika w celu weryfikacji dostępu
-        byte[] qrImage = qrCodeService.generateQrCode(text, principal.getName());
+        // POPRAWKA: Przekazujemy zmienną 'text' jako joinCode oraz jako textToEncode,
+        // a także login użytkownika w celu weryfikacji uprawnień.
+        byte[] qrImage = qrCodeService.generateQrCode(text, text, principal.getName());
 
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_PNG)

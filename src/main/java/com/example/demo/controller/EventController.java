@@ -1,5 +1,7 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.EventDetailsDTO;
+import com.example.demo.dto.EventSummaryDTO; // Import nowo utworzonego obiektu DTO
 import com.example.demo.model.Event;
 import com.example.demo.service.EventService;
 import org.springframework.http.HttpStatus;
@@ -27,11 +29,12 @@ public class EventController {
 
     /**
      * GET /api/events
-     * Pobiera listę wszystkich wydarzeń powiązanych z zalogowanym użytkownikiem.
+     * Pobiera listę wszystkich wydarzeń powiązanych z zalogowanym użytkownikiem (w których uczestniczy lub jest organizatorem).
      * Wykorzystuje principal.getName() (email) do zidentyfikowania użytkownika.
      */
     @GetMapping
-    public ResponseEntity<List<Event>> getAllEvents(Principal principal) {
+    public ResponseEntity<List<EventSummaryDTO>> getAllEvents(Principal principal) {
+        // Zmieniono typ zwracany z List<Event> na List<EventSummaryDTO>, aby dopasować do serwisu
         return ResponseEntity.ok(eventService.findAllByUser(principal.getName()));
     }
 
@@ -47,12 +50,12 @@ public class EventController {
 
     /**
      * GET /api/events/{eventId}
-     * Zwraca szczegółowe informacje o wybranym wydarzeniu.
+     * Zwraca szczegółowe informacje o wybranym wydarzeniu wraz z listą uczestników.
      * Serwis weryfikuje, czy użytkownik ma prawo wglądu (czy jest uczestnikiem lub organizatorem).
      */
     @GetMapping("/{eventId}")
-    public ResponseEntity<Event> getEventDetails(@PathVariable Long eventId, Principal principal) {
-        return ResponseEntity.ok(eventService.getEventWithPermission(eventId, principal.getName()));
+    public ResponseEntity<EventDetailsDTO> getEventDetails(@PathVariable Long eventId, Principal principal) {
+        return ResponseEntity.ok(eventService.getEventDetails(eventId, principal.getName()));
     }
 
     /**
@@ -88,7 +91,6 @@ public class EventController {
             eventService.closeEvent(eventId, principal.getName());
             return ResponseEntity.ok("Wydarzenie zostało pomyślnie zamknięte.");
         } catch (RuntimeException e) {
-            // Zwraca komunikat błędu z serwisu w przypadku braku uprawnień lub błędnego ID
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }

@@ -1,8 +1,11 @@
 package com.example.demo.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 import lombok.Data;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Entity
@@ -24,9 +27,24 @@ public class Event {
     @JoinColumn(name = "organizer_id")
     private User organizer;
 
+    @Column(length = 32, unique = true)
     private String joinCode;
 
-    // DODANO: Pole blokujące dodawanie wydatków
     @Column(name = "is_closed")
     private boolean isClosed = false;
+
+    // Lista uczestników
+    @JsonIgnore // <-- DODAJ TO
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
+    private List<Attendee> attendees = new ArrayList<>();
+
+    // Lista wydatków
+    @JsonIgnore // <-- DODAJ TO
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
+    private List<Expense> expenses = new ArrayList<>();
+
+    // Lista zadań
+    @JsonIgnore // <-- DODAJ TO
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
+    private List<Task> tasks = new ArrayList<>();
 }

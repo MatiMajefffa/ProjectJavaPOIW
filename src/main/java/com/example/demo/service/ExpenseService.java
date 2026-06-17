@@ -17,7 +17,9 @@ public class ExpenseService {
     private final SettlementEngine engine;
     private final EventService eventService;
     private final UserRepository userRepository;
-    private final Map<User, Long> balances = new HashMap<>();
+
+    // ZMIANA: Kluczem jest ID użytkownika (Long), a nie cały obiekt User
+    private final Map<Long, Long> balances = new HashMap<>();
 
     public ExpenseService(ExpenseRepository expenseRepository, SettlementEngine engine,
                           EventService eventService, UserRepository userRepository) {
@@ -28,35 +30,32 @@ public class ExpenseService {
     }
 
     public void registerUser(User user) {
-        balances.putIfAbsent(user, 0L);
+        if (user != null && user.getId() != null) {
+            balances.putIfAbsent(user.getId(), 0L);
+        }
     }
 
     @Transactional
     public Expense createExpense(Long eventId, ExpenseRequest request, String email) {
-        // 1. Sprawdź czy event jest aktywny
         eventService.validateEventIsActive(eventId);
+        com.example.demo.model.Event event = eventService.findById(eventId);
 
-        // 2. Pobierz płatnika na podstawie e-maila (bezpieczne!)
         User payer = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Nie znaleziono użytkownika"));
 
-        // 3. Pobierz uczestników
         List<User> participants = userRepository.findAllById(request.getParticipantIds());
 
-        // 4. Dodaj wydatek przez metodę pomocniczą
-        Expense expense = addExpense(eventId, request.getTitle(), payer, request.getAmount(), participants);
-
-        return expense;
+        return addExpense(event, request.getTitle(), payer, request.getAmount(), participants);
     }
 
     @Transactional
-    public Expense addExpense(Long eventId, String description, User payer, double amount, List<User> participants) {
+    public Expense addExpense(com.example.demo.model.Event event, String description, User payer, double amount, List<User> participants) {
         if (amount <= 0) throw new IllegalArgumentException("Kwota musi być dodatnia");
         if (participants == null || participants.isEmpty())
             throw new IllegalArgumentException("Musi być co najmniej jeden uczestnik");
 
         Expense newExpense = Expense.builder()
-                .eventId(eventId)
+                .event(event)
                 .description(description)
                 .payer(payer)
                 .amount(amount)
@@ -64,30 +63,38 @@ public class ExpenseService {
                 .build();
 
         expenseRepository.save(newExpense);
-        processExpense(payer, (long) (amount * 100), participants);
+
+        // Wywołujemy z ID płatnika
+        processExpense(payer.getId(), (long) (amount * 100), participants);
 
         return newExpense;
     }
 
-    private void processExpense(User payer, long totalAmount, List<User> participants) {
+    private void processExpense(Long payerId, long totalAmount, List<User> participants) {
         long perPerson = totalAmount / participants.size();
         long remainder = totalAmount % participants.size();
 
-        balances.put(payer, balances.getOrDefault(payer, 0L) + totalAmount);
+        // Bezpieczne użycie getOrDefault chroni przed NullPointerException
+        balances.put(payerId, balances.getOrDefault(payerId, 0L) + totalAmount);
 
         for (int i = 0; i < participants.size(); i++) {
             User u = participants.get(i);
             long share = perPerson + (i == 0 ? remainder : 0);
-            balances.put(u, balances.getOrDefault(u, 0L) - share);
+
+            // Używamy u.getId() oraz getOrDefault, aby uniknąć nulli!
+            balances.put(u.getId(), balances.getOrDefault(u.getId(), 0L) - share);
         }
     }
 
-    public Map<User, Long> getCurrentBalances() {
-        return Collections.unmodifiableMap(balances);
-    }
-
+    // Jeśli SettlementEngine wymaga obiektów User, musimy je zmapować z powrotem
     public List<Transaction> calculateSettlements() {
-        return engine.calculate(new HashMap<>(balances));
+        Map<User, Long> settlementInput = new HashMap<>();
+        for (Map.Entry<Long, Long> entry : balances.entrySet()) {
+            User user = userRepository.findById(entry.getKey())
+                    .orElseThrow(() -> new RuntimeException("Użytkownik z bilansu nie istnieje"));
+            settlementInput.put(user, entry.getValue());
+        }
+        return engine.calculate(settlementInput);
     }
 
     public List<Expense> getHistory(Long eventId) {

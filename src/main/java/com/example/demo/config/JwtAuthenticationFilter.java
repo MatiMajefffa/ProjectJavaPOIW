@@ -44,10 +44,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
 
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                    System.out.println("✅ Pomyślnie autoryzowano użytkownika: " + email);
                 }
             } catch (Exception e) {
-                // Nie rzucamy błędem – niepoprawny token sprawi, że zapytanie pozostanie anonimowe i Spring sam je odrzuci
+                // Wypisujemy błąd na konsolę serwera, żebyś widział dlaczego token został odrzucony!
+                System.err.println("❌ Błąd walidacji tokenu JWT: " + e.getMessage());
+                SecurityContextHolder.clearContext(); // Czyścimy kontekst przy błędnym tokenie
             }
+        } else {
+            System.out.println("ℹ️ Brak nagłówka Authorization lub błędny format dla ścieżki: " + request.getRequestURI());
         }
 
         filterChain.doFilter(request, response);
